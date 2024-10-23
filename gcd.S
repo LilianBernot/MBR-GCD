@@ -3,6 +3,25 @@ section .text
 
 start:
     ; Store the value 98765 in DX:AX (since 16-bit registers are limited to 65535 in AX)
+    mov si, message
+
+print_char:
+    lodsb                ; Load next byte from [SI] into AL
+    cmp al, 0            ; Check if we reached the end of the string (null terminator)
+    je newline_after_init              ; If yes, jump to 'done'
+    
+    mov ah, 0x0E         ; BIOS teletype function (int 0x10, ah=0x0E)
+    int 0x10             ; Interrupt call to BIOS to print the character in AL
+    jmp print_char       ; Repeat for the next character
+
+newline_after_init:
+    mov al, 0x0D          ; Carriage return
+    int 0x10
+    mov al, 0x0A          ; Line feed
+    int 0x10
+    jmp print_number
+
+print_number: 
     mov dx, 0               ; Clear DX (we won't use it here for simplicity)
     mov ax, 9876           ; Move the number 98765 into AX
 
@@ -41,6 +60,8 @@ done:
     ; Infinite loop to prevent the program from exiting
     cli                     ; Disable interrupts
     hlt                     ; Halt the CPU
+
+message db 'Please enter a number!', 0  ; The message to print, ending with a null byte
 
 times 510-($-$$) db 0       ; Pad the binary to 510 bytes
 dw 0xAA55                   ; Boot signature
