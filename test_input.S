@@ -1,70 +1,84 @@
 section .text
-    org 0x7C00               ; Set the origin to 0x7C00, where the boot sector is loaded
+    org 0x7C00
 
-start:
-    ; Initialize registers
-    xor ax, ax               ; Clear AX to store the final input number
-    xor bx, bx               ; Clear BX to use as a temporary register
+; ------------ Print every letter we press :
+; input:
+;     mov ah, 0
+;     int 0x16
+;     mov ah, 0x0e
+;     int 0x10
+;     jmp input
 
-read_input:
-    ; Wait for user input (get character from keyboard)
-    mov ah, 0x00             ; BIOS service to read a keystroke (int 0x16, ah=0x00)
-    int 0x16                 ; Get the keystroke in AL
+mov ah, 0x0e ; Enter writing mode 
+mov bx, prompt ; bx is always the memory holder. In the beginning, it holds the memory of the prompt
 
-    ; Check if the key is 'Enter' (ASCII 0x0D means the user pressed Enter)
-    ; cmp al, 0x0D
-    ; je print_number          ; If 'Enter', we stop reading and go to print the number
+; Print the prompt
+print_prompt:
+  mov al, [bx]
+  cmp al, 0
+  je get_input
+  int 0x10
+  inc bx
+  jmp print_prompt
 
-    ; Convert the character in AL to its digit value
-    ; sub al, '0'              ; Convert ASCII character to number (e.g., '5' -> 5)
-    
-    ; Update the number in AX by multiplying by 10 and adding the new digit
-    ; mov bx, ax               ; Move current number to BX
-    ; mov ax, 10               ; Prepare to multiply current number by 10
-    ; mul bx                   ; AX = AX * BX (current number * 10)
-    ; add ax, al               ; Add the new digit to the current value in AX
+; Get the input and store it into the variable
+get_input:
+    mov bx, variable
+    input_loop:
+    mov ah, 0
+    int 0x16
+    cmp al, 0x0D ; The input ends when 0D is given. 
+    je new_line
+    mov [bx], al
+    inc bx
+    jmp input_loop
 
-    ; add ax, 7
+; Print a new line
+new_line:
+  mov ah, 0x0e ; Enter writing mode
+  mov al, 13
+  int 0x10
+  mov al, 10
+  int 0x10
 
-    ; jmp read_input           ; Continue reading the next character
+; Print the hello message
+print_hello:
+  mov bx, hello
+  prompt_loop:
+  mov al, [bx]
+  cmp al, 0
+  je print_variable
+  int 0x10
+  inc bx
+  jmp prompt_loop
 
-print_number:
-    ; Print the final number (AX contains the number)
-    mov cx, 0                ; Initialize digit count (CX will hold the number of digits)
-    mov dx, 0
-    ; mov ax, 9876
+; Print the user input!
+print_variable:
+  mov bx, variable
+  variable_loop:
+  mov al, [bx]
+  cmp al, 0
+  je end
+  int 0x10
+  inc bx
+  jmp variable_loop
 
-next_digit:
-    xor dx, dx               ; Clear DX before division (DX:AX / BX)
-    mov bx, 10               ; Divisor for decimal system
-    div bx                   ; DX:AX / 10 -> quotient in AX, remainder in DX (next digit)
+; Add a '!' in the end (optional)
+end:
+  mov al, '!'
+  int 0x10
 
-    push dx                  ; Push the remainder (next digit) onto the stack
-    inc cx                   ; Increment digit counter
-    cmp ax, 0                ; Check if the quotient is zero (all digits extracted)
-    jne next_digit           ; If not, continue extracting digits
+; jmp $ ; Is this nesecary?
 
-print_digits:
-    pop dx                   ; Pop the last digit (most significant) from the stack
-    add dl, '0'              ; Convert the digit to its ASCII equivalent
-    
-    ; Print the character using BIOS interrupt 0x10
-    mov ah, 0x0E             ; BIOS teletype function
-    mov al, dl               ; Move the ASCII character to AL
-    int 0x10                 ; Print the character in AL
+; Data
+prompt:
+  db "What's your name? ", 0
 
-    loop print_digits        ; Repeat until all digits are printed
+hello:
+  db "Hello ", 0
 
-    ; Print a newline (carriage return and line feed) after printing the number
-    mov al, 0x0D             ; Carriage return
-    int 0x10
-    mov al, 0x0A             ; Line feed
-    int 0x10
+variable:
+  times 10 db 0
 
-done:
-    ; Infinite loop to prevent the program from exiting
-    cli                      ; Disable interrupts
-    hlt                      ; Halt the CPU
-
-times 510-($-$$) db 0        ; Pad the binary to 510 bytes
-dw 0xAA55                    ; Boot signature
+times 510-($-$$) db 0
+dw 0xAA55
