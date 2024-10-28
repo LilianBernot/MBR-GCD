@@ -39,32 +39,27 @@ new_line:
   int 0x10
 
 print_number_initial:
+
   mov bx, number
   variable_initial_loop:
     mov al, [bx]
     cmp al, 0
-    je plus
+    je ascii_to_binary
     int 0x10
     inc bx
     jmp variable_initial_loop
 
-plus:
+ascii_to_binary:
     mov al, '+'
     int 0x10
-    mov al, '4'
-    int 0x10
-    mov al, '='
-    int 0x10
 
-
-ascii_to_binary:
     xor ax, ax              ; Clear AX (will hold final binary result)
     mov bx, number          ; Point BX to beginning of number[]
     
 ascii_loop:
     mov dl, [bx]            ; Get the digit
     cmp dl, 0               ; Check if end of input
-    je add_four
+    je store_first_input
 
     sub dl, '0'             ; Convert ASCII to numeric value (0-9)
 
@@ -78,8 +73,69 @@ ascii_loop:
     inc bx                  ; Move to next digit
     jmp ascii_loop
 
+store_first_input:
+    push ax 
+
+get_input_2:
+    mov bx, number
+
+input_loop_2:
+    ; get input
+    mov ah, 0
+    int 0x16   
+    ; check if is Enter
+    cmp al, 0x0D
+    je print_number_initial_2
+
+    ; inc bx to take following number
+    mov [bx], al ; al is ASCII value
+    inc bx
+
+    jmp input_loop_2
+
+print_number_initial_2:
+    mov bx, number
+    mov ah, 0x0e
+    print_number_initial_2_loop:
+        mov al, [bx]
+        cmp al, 0
+        je ascii_to_binary_2
+        int 0x10
+        inc bx
+        jmp print_number_initial_2_loop
+
+
+ascii_to_binary_2:
+    mov al, '='
+    int 0x10
+    xor ax, ax              ; Clear AX (will hold final binary result)
+    mov bx, number          ; Point BX to beginning of number[]
+    
+ascii_loop_2:
+    mov dl, [bx]            ; Get the digit
+    cmp dl, 0               ; Check if end of input
+    je store_second_input
+
+    sub dl, '0'             ; Convert ASCII to numeric value (0-9)
+
+    ; Multiply AX by 10 
+    add ax, ax          ; ax = ax0*2    
+    mov cx, ax          ; cx = 2*ax
+    add cx, cx          ; cx = 4*ax0
+    add cx, cx          ; cx = 8*ax0
+    add ax, cx          ; ax = ax + cx = 8*ax0 + 2*ax0 = 10*ax0
+    add ax, dx              ; AX = AX * 10 + DL
+    inc bx                  ; Move to next digit
+    jmp ascii_loop_2
+
+store_second_input:
+    push ax 
+    jmp add_four
+
 add_four:
-    add ax, 4
+    pop ax
+    pop bx
+    add ax, bx
 
     jmp print_number
 
