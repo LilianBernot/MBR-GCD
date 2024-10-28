@@ -212,7 +212,7 @@ print_digits:
     loop print_digits       ; Repeat until all digits are printed
 
 initial_prompt:
-    db "This code aims at computing the GCD of two numbers."
+    db "This code aims at computing the GCD of two numbers.", 0
 
 prompt_number_1:
   db "Please enter your first number : ", 0
