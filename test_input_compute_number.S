@@ -1,20 +1,18 @@
 section .text
     org 0x7C00
 
-; ----------- For now, code asks for a number and prints its value.
-
 mov ah, 0x0e ; Enter writing mode 
-mov bx, prompt ; bx is always the memory holder. In the beginning, it holds the memory of the prompt
+mov bx, prompt_number_1 ; bx is always the memory holder. In the beginning, it holds the memory of the prompt
 
-print_prompt:
+print_prompt_number_1:
   mov al, [bx]
   cmp al, 0
-  je get_input
+  je get_first_input
   int 0x10
   inc bx
-  jmp print_prompt
+  jmp print_prompt_number_1
 
-get_input:
+get_first_input:
     mov bx, number
 
 input_loop:
@@ -24,6 +22,10 @@ input_loop:
     ; check if is Enter
     cmp al, 0x0D
     je new_line
+
+    ; print the input character
+    mov ah, 0x0e
+    int 0x10
 
     ; inc bx to take following number
     mov [bx], al ; al is ASCII value
@@ -38,21 +40,7 @@ new_line:
   mov al, 10
   int 0x10
 
-print_number_initial:
-
-  mov bx, number
-  variable_initial_loop:
-    mov al, [bx]
-    cmp al, 0
-    je ascii_to_binary
-    int 0x10
-    inc bx
-    jmp variable_initial_loop
-
 ascii_to_binary:
-    mov al, '+'
-    int 0x10
-
     xor ax, ax              ; Clear AX (will hold final binary result)
     mov bx, number          ; Point BX to beginning of number[]
     
@@ -85,7 +73,11 @@ input_loop_2:
     int 0x16   
     ; check if is Enter
     cmp al, 0x0D
-    je print_number_initial_2
+    je new_line_2
+
+    ; print the input character
+    mov ah, 0x0e
+    int 0x10
 
     ; inc bx to take following number
     mov [bx], al ; al is ASCII value
@@ -93,21 +85,14 @@ input_loop_2:
 
     jmp input_loop_2
 
-print_number_initial_2:
-    mov bx, number
-    mov ah, 0x0e
-    print_number_initial_2_loop:
-        mov al, [bx]
-        cmp al, 0
-        je ascii_to_binary_2
-        int 0x10
-        inc bx
-        jmp print_number_initial_2_loop
-
+new_line_2:
+  mov ah, 0x0e ; Enter writing mode
+  mov al, 13
+  int 0x10
+  mov al, 10
+  int 0x10
 
 ascii_to_binary_2:
-    mov al, '='
-    int 0x10
     xor ax, ax              ; Clear AX (will hold final binary result)
     mov bx, number          ; Point BX to beginning of number[]
     
@@ -129,35 +114,21 @@ ascii_loop_2:
     jmp ascii_loop_2
 
 store_second_input:
-    push ax 
-    
-    pop ax
     pop bx
 
     jmp gcd
 
-; add_four:
-;     pop ax
-;     pop bx
-;     add ax, bx
-
-;     jmp print_number
-
 gcd:
-        cmp ax, bx
-        je print_number
-        jl else
-        sub ax, bx 
-        jmp gcd
+    cmp ax, bx
+    je print_number
+    jl else
+    sub ax, bx 
+    jmp gcd
 else:
-        sub bx, ax 
-        jmp gcd 
-; end_gcd:
-;         mov cx, ax
+    sub bx, ax 
+    jmp gcd
 
 print_number: 
-    mov dx, 0               ; Clear DX (we won't use it here for simplicity)
-
     ; Set up a stack to store digits
     mov cx, 0               ; Initialize digit count (CX will hold the number of digits)
 
@@ -187,7 +158,7 @@ end:
     mov al, '!'
     int 0x10
 
-prompt:
+prompt_number_1:
   db "Please enter a number : ", 0
 
 prompt_number:
