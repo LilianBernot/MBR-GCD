@@ -130,15 +130,30 @@ ascii_loop_2:
 
 store_second_input:
     push ax 
-    jmp add_four
-
-add_four:
+    
     pop ax
     pop bx
-    add ax, bx
 
-    jmp print_number
+    jmp gcd
 
+; add_four:
+;     pop ax
+;     pop bx
+;     add ax, bx
+
+;     jmp print_number
+
+gcd:
+        cmp ax, bx
+        je print_number
+        jl else
+        sub ax, bx 
+        jmp gcd
+else:
+        sub bx, ax 
+        jmp gcd 
+; end_gcd:
+;         mov cx, ax
 
 print_number: 
     mov dx, 0               ; Clear DX (we won't use it here for simplicity)
