@@ -167,6 +167,9 @@ else:
 
 ; prompt to display the result of the computation
 print_prompt_result:
+    ; We store the result in the stack because we will print a message
+    push ax 
+
     mov ah, 0x0e 
     mov bx, prompt_result
 
@@ -180,6 +183,9 @@ print_prompt_result_loop:
 
 ; Print the result of the GCD computation
 print_result: 
+    ; We pop the result of the computation out of the stack 
+    pop ax
+
     ; Set up a stack to store digits
     mov cx, 0               ; Initialize digit count (CX will hold the number of digits)
 
@@ -204,10 +210,6 @@ print_digits:
     int 0x10                ; Print the character in AL
 
     loop print_digits       ; Repeat until all digits are printed
-
-end:
-    mov al, '!'
-    int 0x10
 
 initial_prompt:
     db "This code aims at computing the GCD of two numbers."
