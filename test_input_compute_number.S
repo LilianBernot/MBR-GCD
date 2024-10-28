@@ -1,18 +1,40 @@
 section .text
     org 0x7C00
 
-mov ah, 0x0e ; Enter writing mode 
-mov bx, prompt_number_1 ; bx is always the memory holder. In the beginning, it holds the memory of the prompt
+; print initial prompt to explain concept
+print_initial_prompt:
+    mov ah, 0x0e ; Enter writing mode 
+    mov bx, initial_prompt ; bx is always the memory holder. In the beginning, it holds the memory of the prompt
 
-print_prompt_number_1:
+print_initial_prompt_loop:
   mov al, [bx]
   cmp al, 0
-  je get_first_input
+  je new_line
   int 0x10
   inc bx
-  jmp print_prompt_number_1
+  jmp print_initial_prompt_loop
 
-get_first_input:
+new_line:
+  mov ah, 0x0e ; Enter writing mode
+  mov al, 13
+  int 0x10
+  mov al, 10
+  int 0x10
+
+; print second prompt to ask for user to input first number
+print_prompt_number_1:
+    mov ah, 0x0e 
+    mov bx, prompt_number_1
+
+print_prompt_number_1_loop:
+  mov al, [bx]
+  cmp al, 0
+  je get_input_1
+  int 0x10
+  inc bx
+  jmp print_prompt_number_1_loop
+
+get_input_1:
     mov bx, number
 
 input_loop:
@@ -21,19 +43,17 @@ input_loop:
     int 0x16   
     ; check if is Enter
     cmp al, 0x0D
-    je new_line
-
+    je new_line_1
     ; print the input character
     mov ah, 0x0e
     int 0x10
-
-    ; inc bx to take following number
+    ; inc bx to take following digit
     mov [bx], al ; al is ASCII value
     inc bx
 
     jmp input_loop
 
-new_line:
+new_line_1:
   mov ah, 0x0e ; Enter writing mode
   mov al, 13
   int 0x10
@@ -53,17 +73,32 @@ ascii_loop:
 
     ; Multiply AX by 10 
     add ax, ax          ; ax = ax0*2    
-    mov cx, ax          ; cx = 2*ax
+    mov cx, ax          ; cx = 2*ax0
     add cx, cx          ; cx = 4*ax0
     add cx, cx          ; cx = 8*ax0
     add ax, cx          ; ax = ax + cx = 8*ax0 + 2*ax0 = 10*ax0
-    add ax, dx              ; AX = AX * 10 + DL
-    inc bx                  ; Move to next digit
+    add ax, dx          ; AX = AX * 10 + DL
+    inc bx              ; Move to next digit
     jmp ascii_loop
 
 store_first_input:
+    ; We store the first input number on top of the stack to retrieve it later on
     push ax 
 
+; prompt to ask for second user input
+print_prompt_number_2:
+    mov ah, 0x0e 
+    mov bx, prompt_number_2
+
+print_prompt_number_2_loop:
+  mov al, [bx]
+  cmp al, 0
+  je get_input_2
+  int 0x10
+  inc bx
+  jmp print_prompt_number_2_loop
+
+; get second user input
 get_input_2:
     mov bx, number
 
@@ -99,7 +134,7 @@ ascii_to_binary_2:
 ascii_loop_2:
     mov dl, [bx]            ; Get the digit
     cmp dl, 0               ; Check if end of input
-    je store_second_input
+    je compute_gcd
 
     sub dl, '0'             ; Convert ASCII to numeric value (0-9)
 
@@ -113,14 +148,16 @@ ascii_loop_2:
     inc bx                  ; Move to next digit
     jmp ascii_loop_2
 
-store_second_input:
+; compute GCD
+compute_gcd:
+    ; We retrieve the first input number and store it in bx before doing the calculations
     pop bx
 
     jmp gcd
 
 gcd:
     cmp ax, bx
-    je print_number
+    je print_prompt_result
     jl else
     sub ax, bx 
     jmp gcd
@@ -128,7 +165,21 @@ else:
     sub bx, ax 
     jmp gcd
 
-print_number: 
+; prompt to display the result of the computation
+print_prompt_result:
+    mov ah, 0x0e 
+    mov bx, prompt_result
+
+print_prompt_result_loop:
+  mov al, [bx]
+  cmp al, 0
+  je print_result
+  int 0x10
+  inc bx
+  jmp print_prompt_result_loop
+
+; Print the result of the GCD computation
+print_result: 
     ; Set up a stack to store digits
     mov cx, 0               ; Initialize digit count (CX will hold the number of digits)
 
@@ -158,11 +209,17 @@ end:
     mov al, '!'
     int 0x10
 
-prompt_number_1:
-  db "Please enter a number : ", 0
+initial_prompt:
+    db "This code aims at computing the GCD of two numbers."
 
-prompt_number:
-  db "You entered the following number : ", 0
+prompt_number_1:
+  db "Please enter your first number : ", 0
+
+prompt_number_2:
+  db "Please enter your second number : ", 0
+
+prompt_result:
+  db "The GCD of these two numbers is : ", 0
 
 number:
   times 10 db 0
